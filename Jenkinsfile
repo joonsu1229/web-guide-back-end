@@ -8,7 +8,7 @@ pipeline {
         DEPLOY_HOST = '217.142.144.114'
         DEPLOY_PATH = '/home/ubuntu/app'
 
-        DB_URL = credentials('DB_URL')
+        DB_WEBGUIDE_URL = credentials('DB_WEBGUIDE_URL')
         DB_USERNAME = credentials('DB_USERNAME')
         DB_PASSWORD = credentials('DB_PASSWORD')
         OPENAI_API_KEY = credentials('OPENAI_API_KEY')
@@ -45,7 +45,7 @@ pipeline {
                     APP_DIR="/home/webguide/app"
                     LOG_DIR="/home/webguide/log"
                     JAR_NAME="webguide.jar"
-                    PORT="5130"
+                    PORT="5140"
                     PID_FILE="$APP_DIR/webguide.pid"
 
                     echo "▶️ 기존 프로세스 종료 (포트 $PORT 점유 프로세스)"
@@ -68,7 +68,7 @@ pipeline {
                     # 백그라운드 실행 시 생성된 PID를 PID_FILE에 저장합니다.
                     BUILD_ID=dontKillMe nohup java -Dspring.profiles.active=prd \
                                -DMODEL_TYPE="${MODEL_TYPE}" \
-                               -DDB_URL="${DB_URL}" \
+                               -DDB_WEBGUIDE_URL="${DB_WEBGUIDE_URL}" \
                                -DDB_USERNAME="${DB_USERNAME}" \
                                -DDB_PASSWORD="${DB_PASSWORD}" \
                                -DOPENAI_API_KEY="${OPENAI_API_KEY}" \
