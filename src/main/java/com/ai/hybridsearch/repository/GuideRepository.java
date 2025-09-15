@@ -1,0 +1,52 @@
+package com.ai.hybridsearch.repository;
+
+import com.ai.hybridsearch.entity.Guide;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.Optional;
+
+@Repository
+public interface GuideRepository extends JpaRepository<Guide, Long> {
+
+    // -------------------
+    // 조회용 메서드 (readOnly)
+    // -------------------
+
+    /**
+     * 특정 포탈, 특정 카테고리 ID에 해당하는 Guide를 조회 (삭제 여부 무관)
+     */
+    @Transactional(readOnly = true)
+    Optional<Guide> findByCategoryIdAndPortalId(Long categoryId, String portalId);
+
+    /**
+     * 특정 포탈, 특정 카테고리 ID에 해당하는 '삭제되지 않은' Guide를 조회
+     */
+    @Transactional(readOnly = true)
+    @Query("SELECT g FROM Guide g WHERE g.category.id = :categoryId AND g.portalId = :portalId AND g.deleteYn = false")
+    Optional<Guide> findActiveGuide(@Param("categoryId") Long categoryId, @Param("portalId") String portalId);
+
+
+    // -------------------
+    // 변경/배치용 메서드 (Modifying + Transactional)
+    // -------------------
+
+    /**
+     * 특정 Guide를 소프트 삭제 처리 (deleteYn = true)
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE Guide g SET g.deleteYn = true, g.updatedAt = CURRENT_TIMESTAMP WHERE g.id = :guideId AND g.portalId = :portalId")
+    int softDeleteById(@Param("guideId") Long guideId, @Param("portalId") String portalId);
+
+    /**
+     * 특정 Guide의 현재 버전을 업데이트
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE Guide g SET g.currentVersion.id = :versionId, g.updatedAt = CURRENT_TIMESTAMP WHERE g.id = :guideId")
+    int updateCurrentVersion(@Param("guideId") Long guideId, @Param("versionId") Long versionId);
+}
