@@ -1,5 +1,6 @@
 package com.ai.hybridsearch.repository;
 
+import com.ai.hybridsearch.dto.GuideContentDto;
 import com.ai.hybridsearch.entity.GuideVersion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -35,10 +36,13 @@ public interface GuideVersionRepository extends JpaRepository<GuideVersion, Long
     @Query("SELECT gv FROM GuideVersion gv WHERE gv.guide.id = :guideId AND gv.version = :version")
     Optional<GuideVersion> findByGuideIdAndVersion(@Param("guideId") Long guideId, @Param("version") int version);
 
-
-    // -------------------
-    // 변경/배치용 메서드 (Modifying + Transactional)
-    // -------------------
-    // 버전 데이터는 수정/삭제하지 않는 것을 원칙으로 하므로,
-    // JpaRepository의 save() 외에 별도의 @Modifying 쿼리는 작성하지 않음.
+    /**
+     * getVersionHistory()의 N+1 문제 해결을 위한 DTO 프로젝션 메서드
+     */
+    @Transactional(readOnly = true)
+    @Query("SELECT new com.ai.hybridsearch.dto.GuideContentDto(gv.id, gv.contentBody, gv.version, gv.guide.category.id) " +
+           "FROM GuideVersion gv " +
+           "WHERE gv.guide.id = :guideId " +
+           "ORDER BY gv.version DESC")
+    List<GuideContentDto> findHistoryDtoByGuideId(@Param("guideId") Long guideId);
 }

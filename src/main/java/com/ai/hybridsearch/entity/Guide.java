@@ -35,4 +35,12 @@ public class Guide {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Override
+    public String toString() {
+        return "Guide{" +
+               "id=" + id +
+               ", portalId='" + portalId + '\'' +
+               '}';
+    }
 }
