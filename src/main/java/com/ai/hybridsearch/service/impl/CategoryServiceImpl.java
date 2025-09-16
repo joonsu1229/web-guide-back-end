@@ -102,4 +102,16 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElseThrow(() -> new EntityNotFoundException("삭제할 카테고리 조회 실패: " + categoryId));
         categoryRepository.delete(category);
     }
+
+    /**
+     * 특정 포탈 내에서 모든 카테고리 조회 (활성 여부 무관)
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoryDto> getAllCategoriesByPortal(String portalId) {
+        return categoryRepository.findAllByPortalId(portalId).stream()
+                .map(CategoryDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
 }

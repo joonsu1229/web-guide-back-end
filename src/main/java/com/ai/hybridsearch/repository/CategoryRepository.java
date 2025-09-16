@@ -50,6 +50,12 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     @Transactional(readOnly = true)
     boolean existsByNameAndParentAndPortalId(String name, Category parent, String portalId);
 
+    /**
+     * 특정 포탈 내에서 모든 카테고리 조회 (활성 여부 무관)
+     */
+    @Transactional(readOnly = true)
+    @Query("SELECT c FROM Category c WHERE c.portalId = :portalId ORDER BY c.depth ASC, c.displayOrder ASC")
+    List<Category> findAllByPortalId(@Param("portalId") String portalId);
 
     // -------------------
     // 변경/배치용 메서드 (Modifying + Transactional)

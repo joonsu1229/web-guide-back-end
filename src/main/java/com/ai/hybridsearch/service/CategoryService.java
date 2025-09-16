@@ -9,4 +9,5 @@ public interface CategoryService {
     CategoryDto updateCategory(String portalId, Long categoryId, CategoryDto categoryDto);
     void deactivateCategoryAndChildren(String portalId, Long categoryId);
     void deleteCategory(String portalId, Long categoryId);
+    List<CategoryDto> getAllCategoriesByPortal(String portalId);
 }
