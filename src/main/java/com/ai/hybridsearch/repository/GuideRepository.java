@@ -66,7 +66,7 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
      */
     @Query(value = "SELECT gv.id, gv.content_body, gv.version, g.category_id " +
                    "FROM webguide.guides g " +
-                   "JOIN webguide.guide_versions gv ON g.current_version_id = gv.id " +
+                   "JOIN webguide.guide_versions gv ON  g.current_version_id = gv.version AND g.id = gv.guide_id " +
                    "WHERE g.category_id = :categoryId AND g.portal_id = :portalId AND g.delete_yn = false",
            nativeQuery = true) // nativeQuery = true 옵션 추가
     Optional<GuideContentDto> findCurrentContentNative(@Param("categoryId") Long categoryId, @Param("portalId") String portalId);
