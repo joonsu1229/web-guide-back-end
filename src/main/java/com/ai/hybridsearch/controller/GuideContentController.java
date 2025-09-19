@@ -25,7 +25,7 @@ public class GuideContentController {
     @PostMapping
     public ResponseEntity<GuideContentDto> saveContent(@RequestBody GuideContentDto requestDto) {
         return ResponseEntity.ok(guideContentService.saveNewVersion(
-            "P1", // 실제로는 JWT 등에서 portalId를 가져와야 함
+            "P1", // 실제로는 JWT 등에서 portalId를 가져와야 함 나중에 포탈아이디 dto든 추가해야댐
             requestDto.getCategoryId(),
             requestDto.getContentBody()
         ));

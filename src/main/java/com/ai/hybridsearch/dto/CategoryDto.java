@@ -35,6 +35,8 @@ public class CategoryDto {
                 .depth(entity.getDepth())
                 .displayOrder(entity.getDisplayOrder())
                 .section(entity.getSection())
+                .parentId (entity.getParent() != null ? entity.getParent().getId() : null)
+                .portalId(entity.getPortalId())
                 .children(
                     entity.getChildren() != null
                         ? entity.getChildren().stream().map(CategoryDto::fromEntity).collect(Collectors.toList())

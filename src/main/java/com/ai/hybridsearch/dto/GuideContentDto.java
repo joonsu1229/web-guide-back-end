@@ -16,4 +16,8 @@ public class GuideContentDto {
         this.version = version;
         this.categoryId = categoryId;
     }
+
+    public static GuideContentDto empty(Long categoryId) {
+        return new GuideContentDto(null, "", 0, categoryId);
+    }
 }
