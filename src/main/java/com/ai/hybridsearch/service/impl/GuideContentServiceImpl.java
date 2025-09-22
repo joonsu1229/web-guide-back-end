@@ -12,11 +12,16 @@ import com.ai.hybridsearch.service.GuideContentService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.openkoreantext.processor.OpenKoreanTextProcessorJava;
+import org.openkoreantext.processor.tokenizer.KoreanTokenizer;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import scala.collection.JavaConverters;
+import scala.collection.Seq;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j // 2. 로깅을 위해 Slf4j 추가
 @Service
@@ -73,8 +78,31 @@ public class GuideContentServiceImpl implements GuideContentService {
             float[] embeddingArray = embeddingService.embed(savedVersion.getContentBody());
             String vectorStr = floatArrayToVectorString(embeddingArray);
 
+            // 1️⃣ 형태소 분석
+            Seq<KoreanTokenizer.KoreanToken> tokens = OpenKoreanTextProcessorJava.tokenize(contentBody);
+
+            // 2️⃣ Java 리스트로 변환
+            List<KoreanTokenizer.KoreanToken> tokenList = JavaConverters.seqAsJavaList(tokens);
+
+            // 3️⃣ 의미 있는 단어만 필터링
+            List<String> meaningfulTokens = tokenList.stream()
+                    .filter(token -> {
+                        String text = token.text().trim();
+                        // 특수문자, 숫자, 공백 제거
+                        if (text.isEmpty()) return false;
+                        if (text.matches("[\\p{Punct}\\d]+")) return false;
+                        // 조사, 불용어 등은 KoreanPos.Space, KoreanPos.Josa 등으로 필터링 가능
+                        String pos = token.pos().toString();
+                        if (pos.equals("Space") || pos.equals("Josa") || pos.equals("Punctuation")) return false;
+                        return true;
+                    })
+                    .map(KoreanTokenizer.KoreanToken::text)
+                    .collect(Collectors.toList());
+
+
             // 6. Repository의 네이티브 쿼리를 호출하여 임베딩을 업데이트합니다.
-            guideVersionRepository.updateEmbedding(savedVersion.getId(), vectorStr);
+            String searchVector = String.join(" ", meaningfulTokens);
+            guideVersionRepository.updateEmbedding(savedVersion.getId(), vectorStr, searchVector);
             log.info("가이드 버전 ID {}에 대한 임베딩 업데이트가 완료되었습니다.", savedVersion.getId());
 
         } catch (Exception e) {
