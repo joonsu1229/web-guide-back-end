@@ -45,6 +45,9 @@ public interface GuideVersionRepository extends JpaRepository<GuideVersion, Long
      */
     @Modifying
     @Transactional
-    @Query(value = "UPDATE webguide.guide_versions SET embedding = CAST(:embeddingText AS vector) WHERE id = :id", nativeQuery = true)
-    void updateEmbedding(@Param("id") Long id, @Param("embeddingText") String embeddingText);
+    @Query(value = "UPDATE webguide.guide_versions " +
+                   "SET embedding = CAST(:embeddingText AS vector), " +
+                   "    search_vector = to_tsvector('simple', :searchVector) " +
+                   "WHERE id = :id", nativeQuery = true)
+    void updateEmbedding(@Param("id") Long id, @Param("embeddingText") String embeddingText, @Param("searchVector") String searchVector);
 }
