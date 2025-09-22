@@ -19,13 +19,8 @@ public interface GuideVersionRepository extends JpaRepository<GuideVersion, Long
     // -------------------
     // 조회용 메서드 (readOnly)
     // -------------------
-
-    @Transactional(readOnly = true)
-    @Query("SELECT new com.ai.hybridsearch.dto.GuideContentDto(gv.id, gv.contentBody, gv.version, gv.guide.category.id) " +
-           "FROM GuideVersion gv " +
-           "WHERE gv.guide.id = :guideId " +
-           "ORDER BY gv.version DESC")
-    List<GuideContentDto> findTopDtoByGuideId(@Param("guideId") Long guideId, Pageable pageable);
+    @Query("SELECT gv.version FROM GuideVersion gv WHERE gv.guide.id = :guideId ORDER BY gv.version DESC")
+    List<Integer> findLatestVersionByGuideId(@Param("guideId") Long guideId, Pageable pageable);
 
 
     /**
@@ -50,6 +45,6 @@ public interface GuideVersionRepository extends JpaRepository<GuideVersion, Long
      */
     @Modifying
     @Transactional
-    @Query(value = "UPDATE guide_version SET embedding = CAST(:embeddingText AS vector) WHERE id = :id", nativeQuery = true)
+    @Query(value = "UPDATE webguide.guide_versions SET embedding = CAST(:embeddingText AS vector) WHERE id = :id", nativeQuery = true)
     void updateEmbedding(@Param("id") Long id, @Param("embeddingText") String embeddingText);
 }

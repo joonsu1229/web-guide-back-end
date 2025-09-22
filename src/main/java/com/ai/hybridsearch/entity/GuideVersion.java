@@ -16,7 +16,6 @@ public class GuideVersion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Lob
     @Column(name = "content_body", columnDefinition = "text")
     private String contentBody;
 

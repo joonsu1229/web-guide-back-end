@@ -53,10 +53,10 @@ public class GuideContentServiceImpl implements GuideContentService {
             guide.setDeleteYn(false);
         }
 
-        int nextVersionNum = guideVersionRepository.findTopDtoByGuideId(guide.getId(), PageRequest.of(0, 1))
-            .stream()                         // List를 Stream으로 변환
-            .findFirst()                      // Stream의 첫 번째 아이템을 Optional로 가져옴 (결과: Optional<GuideContentDto>)
-            .map(dto -> dto.getVersion() + 1) // 이제 익숙한 Optional의 map을 사용
+        int nextVersionNum = guideVersionRepository.findLatestVersionByGuideId(guide.getId(), PageRequest.of(0, 1))
+            .stream()      // List를 Stream으로 변환
+            .findFirst()   // Stream의 첫 번째 값을 Optional<Integer>로 가져옴
+            .map(latestVersion -> latestVersion + 1)
             .orElse(1);
 
         GuideVersion newVersion = new GuideVersion();
@@ -83,7 +83,7 @@ public class GuideContentServiceImpl implements GuideContentService {
         }
 
         // 7. 가이드의 현재 버전을 새로 저장된 버전으로 업데이트합니다.
-        guideRepository.updateCurrentVersion(guide.getId(), savedVersion.getId());
+        guideRepository.updateCurrentVersion(guide.getId(), savedVersion.getVersion());
 
         return new GuideContentDto(
             savedVersion.getId(),

@@ -59,7 +59,7 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
     @Modifying
     @Transactional
     @Query("UPDATE Guide g SET g.currentVersion.id = :versionId, g.updatedAt = CURRENT_TIMESTAMP WHERE g.id = :guideId")
-    int updateCurrentVersion(@Param("guideId") Long guideId, @Param("versionId") Long versionId);
+    int updateCurrentVersion(@Param("guideId") Long guideId, @Param("versionId") int versionId);
 
     /**
      * JPQL 번역 계층을 완전히 우회하기 위한 네이티브 쿼리 테스트
