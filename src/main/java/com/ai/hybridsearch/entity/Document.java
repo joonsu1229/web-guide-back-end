@@ -7,56 +7,43 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "documents", schema = "webguide")
+@Table(name = "guide_versions", schema = "webguide") // 실제 테이블명인 guide_versions에 매핑
 @Getter
 @Setter
 public class Document {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String title;
+    // guide_id 필드 추가
+    @Column(name = "guide_id")
+    private Long guideId;
 
-    @Column(columnDefinition = "TEXT")
-    private String content;
+    // version 필드 추가
+    @Column(name = "version")
+    private int version;
 
-    @Column(name = "category")
-    private String category;
+    // content_body 필드명 유지
+    @Column(name = "content_body", columnDefinition = "text")
+    private String contentBody;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "embedding", columnDefinition = "vector(768)")
+    private float[] embedding;
 
-    // Full-text search를 위한 tsvector 컬럼
     @Column(name = "search_vector", insertable = false, updatable = false, columnDefinition = "tsvector")
     private String searchVector;
 
-    // vector 검색을 위한 vector컬럼
-    @Transient
-    private float[] embedding;
-
-    @Transient
-    private Document document;
     @Transient
     private float score;
 
-    // 생성자
-    public Document() {}
-
-    public Document(Document document, float score) {
-        this.document = document;
-        this.score = score;
-    }
-
-    public Document(String title, String content, String category) {
-        this.title = title;
-        this.content = content;
-        this.category = category;
+    @PrePersist
+    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
     }
 
+    public Document() {}
 }

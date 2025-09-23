@@ -218,8 +218,8 @@ public class AnthropicExtractionServiceImpl implements AiExtractionService {
     }
 
     private Integer getOutputMaxTokens() {
-        String maxTokens = aiModelConfig.getAnthropic().getOutputMaxToken();
-        return maxTokens != null ? Integer.parseInt(maxTokens) : 4000;
+        Integer maxTokens = aiModelConfig.getAnthropic().getOutputMaxToken();
+        return maxTokens != null ? maxTokens : 4000;
     }
 
     /**
@@ -342,8 +342,8 @@ public class AnthropicExtractionServiceImpl implements AiExtractionService {
     }
 
     private int getInputMaxTokens() {
-        String maxTokens = aiModelConfig.getAnthropic().getInputMaxToken();
-        return maxTokens != null ? Integer.parseInt(maxTokens) : 100000; // Claude의 큰 컨텍스트 윈도우
+        Integer maxTokens = aiModelConfig.getAnthropic().getInputMaxToken();
+        return maxTokens != null ? maxTokens : 100000; // Claude의 큰 컨텍스트 윈도우
     }
 
     private String createJobListExtractionPrompt(String html, String siteName) {

@@ -1,165 +1,143 @@
 package com.ai.hybridsearch.service.impl;
 
 import com.ai.hybridsearch.dto.SearchResult;
-import com.ai.hybridsearch.entity.Document;
-import com.ai.hybridsearch.service.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.ai.hybridsearch.service.HybridSearchService;
+import com.ai.hybridsearch.service.QueryBuilderService; // 인터페이스 타입
+import com.ai.hybridsearch.service.RAGService;           // 인터페이스 타입
+import com.ai.hybridsearch.service.VectorSearchService;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Service
 public class HybridSearchServiceImpl implements HybridSearchService {
-    
-    @Autowired
-    private DocumentServiceImpl documentService;
-    
-    @Autowired
-    private QueryBuilderServiceImpl queryBuilderServiceImpl;
-    
-    @Autowired
-    private RerankerServiceImpl rerankerServiceImpl;
 
-    @Autowired
-    private EmbeddingService embeddingService;
+    private static final int K_CONST = 60; // RRF 랭킹 상수
 
-    private final VectorSearchServiceImpl vectorSearchServiceImpl;
+    private final VectorSearchService vectorSearchService;
+    private final QueryBuilderService queryBuilderService;
+    private final RAGService ragService;
 
-    public HybridSearchServiceImpl(VectorSearchServiceImpl vectorSearchServiceImpl) {
-        this.vectorSearchServiceImpl = vectorSearchServiceImpl;
+    // 생성자 주입
+    public HybridSearchServiceImpl(VectorSearchService vectorSearchService,
+                                   QueryBuilderService queryBuilderService,
+                                   RAGService ragService) {
+        this.vectorSearchService = vectorSearchService;
+        this.queryBuilderService = queryBuilderService;
+        this.ragService = ragService;
     }
 
-    public List<SearchResult> hybridSearch(String query, String category, int limit) {
-        List<SearchResult> allResults = new ArrayList<>();
+    /**
+     * RAG 파이프라인을 실행하는 메인 메서드.
+     * 최종 답변과 출처 문서를 포함하는 객체를 반환합니다.
+     */
+    public RAGService.GeneratedResponse searchAndGenerate(String query, String category, int limit) {
+        // 1. 쿼리 변환
+        QueryBuilderService.TransformedQuery tQuery = queryBuilderService.transformQuery(query);
 
-        // 1. 어휘적 검색 (Lexical Search)
-        String lexicalQuery = queryBuilderServiceImpl.buildFullTextQuery(query);
-        List<SearchResult> lexicalResults = lexicalSearch(lexicalQuery, category, limit);
+        // 2. 검색 (Retrieval) - 어휘/의미 검색 병렬 실행
+        CompletableFuture<List<SearchResult>> lexicalFuture = CompletableFuture.supplyAsync(
+                () -> lexicalSearch(tQuery.getLexicalQuery(), category, limit * 2)
+        );
+        CompletableFuture<List<SearchResult>> semanticFuture = CompletableFuture.supplyAsync(
+                () -> vectorSearchService.semanticSearch(tQuery.getSemanticQuery(), category, limit * 2)
+        );
 
-        // 2. 의미적 검색 (Semantic Search)
-        List<SearchResult> semanticResults = vectorSearchServiceImpl.semanticSearch(query, category, limit * 2);
+        CompletableFuture.allOf(lexicalFuture, semanticFuture).join();
 
-        // 3. 결과 병합 및 중복 제거
-        Map<Long, SearchResult> combinedResults = new HashMap<>();
+        try {
+            // 3. 결과 융합 (Reciprocal Rank Fusion)
+            List<SearchResult> fusedResults = fuseResultsWithRRF(lexicalFuture.get(), semanticFuture.get());
 
-        // 어휘적 결과 추가
-        for (SearchResult result : lexicalResults) {
-            Long docId = result.getDocument().getId();
-            combinedResults.put(docId, result);
+            // 4. 최종 랭킹 및 limit 적용
+            List<SearchResult> finalContext = fusedResults.stream()
+                    .sorted(Comparator.comparing(SearchResult::getScore).reversed())
+                    .limit(limit)
+                    .collect(Collectors.toList());
+
+            // 5. 답변 생성 (Generation)
+            return ragService.generate(tQuery.getOriginalQuery(), finalContext);
+
+        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("RAG 검색 처리 중 병렬 오류 발생", e);
         }
-
-        // 의미적 결과와 결합 (하이브리드 점수 계산)
-        for (SearchResult semanticResult : semanticResults) {
-            Long docId = semanticResult.getDocument().getId();
-            SearchResult lexicalResult = combinedResults.get(docId);
-
-            if (lexicalResult != null) {
-                // 두 검색에서 모두 발견된 문서 - 하이브리드 점수 계산
-                float hybridScore = (float) (lexicalResult.getScore() + semanticResult.getScore());
-                SearchResult hybridResult = new SearchResult(
-                    semanticResult.getDocument(),
-                    hybridScore,
-                    "hybrid"
-                );
-                combinedResults.put(docId, hybridResult);
-            } else {
-                // 의미적 검색에서만 발견된 문서
-                combinedResults.put(docId, semanticResult);
-            }
-        }
-
-        allResults.addAll(combinedResults.values());
-
-        // 4. 중복 제거 및 최고 점수 유지
-        Map<Long, SearchResult> uniqueResults = new HashMap<>();
-        for (SearchResult result : allResults) {
-            Long docId = result.getDocument().getId();
-            if (!uniqueResults.containsKey(docId) ||
-                uniqueResults.get(docId).getScore() < result.getScore()) {
-                uniqueResults.put(docId, result);
-            }
-        }
-
-        // 4. 재정렬 (유사도 기준 reranking)
-        List<SearchResult> finalResults = new ArrayList<>(uniqueResults.values());
-        return rerankerServiceImpl.rerankWithCategoryBoost(finalResults, query, category, limit);
     }
 
-    public List<SearchResult> semanticSearch(String query, String category, int limit) {
-        return vectorSearchServiceImpl.semanticSearch(query, category, limit);
+    /**
+     * RRF (Reciprocal Rank Fusion)를 사용하여 두 검색 결과를 결합합니다.
+     * @param lexicalResults 어휘 검색 결과
+     * @param semanticResults 의미 검색 결과
+     * @return RRF 점수가 계산된 통합 결과 리스트
+     */
+    private List<SearchResult> fuseResultsWithRRF(List<SearchResult> lexicalResults, List<SearchResult> semanticResults) {
+        Map<Long, Double> rrfScores = new ConcurrentHashMap<>();
+
+        // 랭크를 계산 (rank = index + 1)
+        IntStream.range(0, lexicalResults.size()).forEach(i -> {
+            SearchResult res = lexicalResults.get(i);
+            double score = 1.0 / (K_CONST + i + 1);
+            rrfScores.merge(res.getDocument().getId(), score, Double::sum);
+        });
+
+        IntStream.range(0, semanticResults.size()).forEach(i -> {
+            SearchResult res = semanticResults.get(i);
+            double score = 1.0 / (K_CONST + i + 1);
+            rrfScores.merge(res.getDocument().getId(), score, Double::sum);
+        });
+
+        Map<Long, SearchResult> allDocs = Stream.concat(lexicalResults.stream(), semanticResults.stream())
+                .collect(Collectors.toMap(res -> res.getDocument().getId(), res -> res, (existing, replacement) -> existing));
+
+        return rrfScores.entrySet().stream()
+                .map(entry -> {
+                    SearchResult result = allDocs.get(entry.getKey());
+                    result.setScore(entry.getValue().floatValue()); // RRF 점수로 업데이트
+                    return result;
+                })
+                .collect(Collectors.toList());
     }
 
+    /**
+     * 어휘 검색을 수행합니다.
+     */
     public List<SearchResult> lexicalSearch(String query, String category, int limit) {
-        String processedQuery = queryBuilderServiceImpl.buildFullTextQuery(query);
-
-        List<Document> documents;
-        if (category != null && !category.isEmpty()) {
-            documents = vectorSearchServiceImpl.findByFullTextSearchAndCategory(processedQuery, category, limit);
-        } else {
-            documents = vectorSearchServiceImpl.findByFullTextSearch(processedQuery, limit);
-        }
-
-        return documents.stream()
-            .map(doc -> new SearchResult(doc, doc.getScore(), "lexical"))
-            .collect(Collectors.toList());
+        return vectorSearchService.findByFullTextSearch(query, category, limit)
+                .stream()
+                .map(doc -> new SearchResult(doc, doc.getScore(), "lexical"))
+                .collect(Collectors.toList());
     }
 
-    public List<SearchResult> searchWithBoolean(List<String> mustHave, List<String> shouldHave,
-                                               List<String> mustNotHave, String category, int limit) {
-        String booleanQuery = queryBuilderServiceImpl.buildBooleanQuery(mustHave, shouldHave, mustNotHave);
-        return lexicalSearch(booleanQuery, category, limit);
+    /**
+     * 기존 인터페이스와의 호환성을 위해 유지합니다.
+     * RAG의 검색 결과(컨텍스트)만 반환합니다.
+     */
+    @Override
+    public List<SearchResult> hybridSearch(String query, String category, int limit) {
+        QueryBuilderService.TransformedQuery tQuery = queryBuilderService.transformQuery(query);
+        var lexical = lexicalSearch(tQuery.getLexicalQuery(), category, limit * 2);
+        var semantic = vectorSearchService.semanticSearch(tQuery.getSemanticQuery(), category, limit * 2);
+        List<SearchResult> fused = fuseResultsWithRRF(lexical, semantic);
+        return fused.stream()
+               .sorted(Comparator.comparing(SearchResult::getScore).reversed())
+               .limit(limit)
+               .collect(Collectors.toList());
     }
 
-    public List<SearchResult> searchByCategory(String category, int limit) {
-        List<Document> documents = documentService.findByCategory(category);
-        return documents.stream()
-            .limit(limit)
-            .map(doc -> new SearchResult(doc, 1.0f, "category"))
-            .collect(Collectors.toList());
-    }
-
+    // advancedHybridSearch 메서드는 RAG 플로우와 맞지 않아 생략하거나,
+    // 필요 시 위 로직을 기반으로 재구현해야 합니다.
+    @Override
     public List<SearchResult> advancedHybridSearch(String query, String category,
                                                   boolean useFuzzy, boolean usePhrase, int limit) {
-        List<SearchResult> allResults = new ArrayList<>();
-
-        // 1. 기본 하이브리드 검색
-        List<SearchResult> baseResults = hybridSearch(query, category, limit * 2);
-        allResults.addAll(baseResults);
-
-        // 2. 구문 검색 (요청시)
-        if (usePhrase) {
-            String phraseQuery = queryBuilderServiceImpl.buildPhraseQuery(query);
-            List<SearchResult> phraseResults = lexicalSearch(phraseQuery, category, limit);
-            phraseResults.forEach(result -> {
-                result.setScore(result.getScore() * 0.9f);
-                result.setSearchType("phrase");
-            });
-            allResults.addAll(phraseResults);
-        }
-
-        // 3. 퍼지 검색 (요청시)
-        if (useFuzzy) {
-            String fuzzyQuery = queryBuilderServiceImpl.buildFuzzyQuery(query);
-            List<SearchResult> fuzzyResults = lexicalSearch(fuzzyQuery, category, limit);
-            fuzzyResults.forEach(result -> {
-                result.setScore(result.getScore() * 0.7f);
-                result.setSearchType("fuzzy");
-            });
-            allResults.addAll(fuzzyResults);
-        }
-
-        // 4. 중복 제거 및 최고 점수 유지
-        Map<Long, SearchResult> uniqueResults = new HashMap<>();
-        for (SearchResult result : allResults) {
-            Long docId = result.getDocument().getId();
-            if (!uniqueResults.containsKey(docId) || 
-                uniqueResults.get(docId).getScore() < result.getScore()) {
-                uniqueResults.put(docId, result);
-            }
-        }
-        
-        List<SearchResult> finalResults = new ArrayList<>(uniqueResults.values());
-        return rerankerServiceImpl.rerankWithCategoryBoost(finalResults, query, category, limit);
+        // 이 메서드는 새로운 RAG 아키텍처에 맞게 재설계가 필요합니다.
+        // 여기서는 기본 hybridSearch를 호출하는 것으로 대체합니다.
+        return hybridSearch(query, category, limit);
     }
 }

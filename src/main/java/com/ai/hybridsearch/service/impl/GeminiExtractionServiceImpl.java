@@ -528,8 +528,8 @@ public class GeminiExtractionServiceImpl implements AiExtractionService {
     }
 
     private Integer getOutputMaxTokens() {
-        String maxTokens = aiModelConfig.getGemini().getOutputMaxToken();
-        return maxTokens != null ? Integer.parseInt(maxTokens) : 4000;
+        Integer maxTokens = aiModelConfig.getGemini().getOutputMaxToken();
+        return maxTokens != null ? maxTokens : 4000;
     }
 
     private String generateChatResponseWithRetry(String prompt, ChatLanguageModel model) {

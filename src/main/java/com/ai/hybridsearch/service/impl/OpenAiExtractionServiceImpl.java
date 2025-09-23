@@ -220,8 +220,8 @@ public class OpenAiExtractionServiceImpl implements AiExtractionService {
     }
 
     private Integer getOutputMaxTokens() {
-        String maxTokens = aiModelConfig.getOpenai().getOutputMaxToken();
-        return maxTokens != null ? Integer.parseInt(maxTokens) : 4000;
+        Integer maxTokens = aiModelConfig.getOpenai().getOutputMaxToken();
+        return maxTokens != null ? maxTokens : 4000;
     }
 
     /**
@@ -343,8 +343,8 @@ public class OpenAiExtractionServiceImpl implements AiExtractionService {
     }
 
     private int getInputMaxTokens() {
-        String maxTokens = aiModelConfig.getOpenai().getInputMaxToken();
-        return maxTokens != null ? Integer.parseInt(maxTokens) : 8000;
+        Integer maxTokens = aiModelConfig.getOpenai().getInputMaxToken();
+        return maxTokens != null ? maxTokens : 8000;
     }
 
     private String createJobListExtractionPrompt(String html, String siteName) {

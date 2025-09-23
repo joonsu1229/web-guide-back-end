@@ -12,7 +12,7 @@ public class SearchResult {
         this.document = document;
         this.score = score;
         this.searchType = searchType;
-        this.snippet = generateSnippet(document.getContent());
+        this.snippet = generateSnippet(document.getContentBody());
     }
 
     private String generateSnippet(String content) {

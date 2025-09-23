@@ -19,8 +19,8 @@ public class AiModelConfig {
         private String apiKey;
         private String embeddingModel;
         private String aiChatModel;
-        private String outputMaxToken;
-        private String inputMaxToken ;
+        private Integer outputMaxToken;
+        private Integer inputMaxToken; 
     }
 
     @Data
@@ -28,15 +28,15 @@ public class AiModelConfig {
         private String apiKey;
         private String embeddingModel;
         private String aiChatModel;
-        private String outputMaxToken;
-        private String inputMaxToken;
+        private Integer outputMaxToken;
+        private Integer inputMaxToken; 
     }
 
     @Data
     public static class AnthropicConfig {
         private String apiKey;
         private String aiChatModel;
-        private String outputMaxToken;
-        private String inputMaxToken;
+        private Integer outputMaxToken;
+        private Integer inputMaxToken; 
     }
 }
