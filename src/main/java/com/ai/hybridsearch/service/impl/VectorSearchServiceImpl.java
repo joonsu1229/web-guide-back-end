@@ -34,7 +34,7 @@ public class VectorSearchServiceImpl implements VectorSearchService {
 
     @Override
     public List<SearchResult> semanticSearch(String query, String category, int limit) {
-        float[] embedding = embeddingService.embed(query);
+        float[] embedding = embeddingService.embedQuery(query);
         String vectorStr = toVectorString(embedding);
 
         List<Object[]> results;

@@ -17,7 +17,8 @@ import org.springframework.stereotype.Service;
 public class EmbeddingService {
 
     private final AiModelConfig config;
-    private EmbeddingModel embeddingModel;
+    private EmbeddingModel embeddingModel; //문서임베딩
+    private EmbeddingModel queryEmbeddingModel;    // 질문(쿼리) 임베딩용
 
     @PostConstruct
     public void init() {
@@ -71,15 +72,24 @@ public class EmbeddingService {
     }
 
     private void initGeminiModel() {
-        log.info("Gemini 모델 생성 시작...");
+        log.info("Gemini 모델 생성 시작 (문서/질문용 동시 생성)...");
         var geminiConfig = config.getGemini();
 
+        // 1. 문서 임베딩용 모델 생성
         embeddingModel = GoogleAiEmbeddingModel.builder()
                 .apiKey(geminiConfig.getApiKey())
                 .modelName(geminiConfig.getEmbeddingModel())
+                .taskType(GoogleAiEmbeddingModel.TaskType.RETRIEVAL_DOCUMENT)
                 .build();
 
-        log.info("Gemini 모델 생성 완료 - Model: {}", geminiConfig.getEmbeddingModel());
+        // 2. 질문 임베딩용 모델 생성
+        queryEmbeddingModel = GoogleAiEmbeddingModel.builder()
+                .apiKey(geminiConfig.getApiKey())
+                .modelName(geminiConfig.getEmbeddingModel())
+                .taskType(GoogleAiEmbeddingModel.TaskType.RETRIEVAL_QUERY)
+                .build();
+
+        log.info("Gemini 문서/질문 임베딩 모델 생성 완료");
     }
 
     private void validateOpenAiConfig() {
@@ -124,6 +134,18 @@ public class EmbeddingService {
 
     public float[] embed(String text) {
         return generateEmbedding(text).vector();
+    }
+
+    public float[] embedQuery(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            throw new IllegalArgumentException("임베딩할 질문 텍스트가 비어있습니다.");
+        }
+        try {
+            return queryEmbeddingModel.embed(text).content().vector();
+        } catch (Exception e) {
+            log.error("질문 임베딩 생성 실패 - Text: {}", text, e);
+            throw new RuntimeException("질문 임베딩 생성에 실패했습니다.", e);
+        }
     }
 
     public double cosineSimilarity(Embedding embedding1, Embedding embedding2) {

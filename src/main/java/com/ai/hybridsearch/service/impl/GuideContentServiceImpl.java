@@ -69,11 +69,11 @@ public class GuideContentServiceImpl implements GuideContentService {
         newVersion.setVersion(nextVersionNum);
         newVersion.setContentBody(contentBody);
 
-        // 4. 임베딩 없이 먼저 버전을 저장하여 ID를 확보합니다.
+        // 4. 임베딩 없이 먼저 버전을 저장하여 ID를 확보
         GuideVersion savedVersion = guideVersionRepository.save(newVersion);
 
         try {
-            // 5. 저장된 콘텐츠로 임베딩을 생성합니다.
+            // 5. 저장된 콘텐츠로 임베딩을 생성
             log.info("가이드 버전 ID {}에 대한 임베딩 생성을 시작합니다.", savedVersion.getId());
             float[] embeddingArray = embeddingService.embed(savedVersion.getContentBody());
             String vectorStr = floatArrayToVectorString(embeddingArray);
@@ -100,7 +100,7 @@ public class GuideContentServiceImpl implements GuideContentService {
                     .collect(Collectors.toList());
 
 
-            // 6. Repository의 네이티브 쿼리를 호출하여 임베딩을 업데이트합니다.
+            // 6. Repository의 네이티브 쿼리를 호출하여 임베딩을 업데이트
             String searchVector = String.join(" ", meaningfulTokens);
             guideVersionRepository.updateEmbedding(savedVersion.getId(), vectorStr, searchVector);
             log.info("가이드 버전 ID {}에 대한 임베딩 업데이트가 완료되었습니다.", savedVersion.getId());
