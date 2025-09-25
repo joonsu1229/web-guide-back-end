@@ -9,6 +9,7 @@ import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -136,6 +137,7 @@ public class EmbeddingService {
         return generateEmbedding(text).vector();
     }
 
+    @Cacheable("query-embeddings")
     public float[] embedQuery(String text) {
         if (text == null || text.trim().isEmpty()) {
             throw new IllegalArgumentException("임베딩할 질문 텍스트가 비어있습니다.");

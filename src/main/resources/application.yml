@@ -15,7 +15,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    show-sql: true
+    show-sql: false
   # Cache Configuration
   cache:
     type: simple
@@ -23,6 +23,7 @@ spring:
       - jobStats
       - companyList
       - categoryList
+      - query-embeddings
     caffeine:
       spec: maximumSize=1000,expireAfterWrite=1h
 

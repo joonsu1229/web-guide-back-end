@@ -14,7 +14,7 @@ public interface GuideContentService {
      * 특정 카테고리에 연결된 가이드의 '새로운 버전'을 저장.
      * 기존 Guide가 없으면 새로 생성함.
      */
-    GuideContentDto saveNewVersion(String portalId, Long categoryId, String contentBody);
+    GuideContentDto saveNewVersion(String portalId, GuideContentDto guideContentDto);
 
     /**
      * 특정 카테고리에 연결된 가이드를 소프트 삭제 처리.

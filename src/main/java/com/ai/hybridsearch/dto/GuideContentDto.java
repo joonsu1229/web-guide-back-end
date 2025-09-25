@@ -8,6 +8,9 @@ public class GuideContentDto {
     private String contentBody;
     private int version;
     private Long categoryId;
+    private String menu;
+    private String title;
+    private String description;
 
     // JPQL의 "SELECT new" 구문이 사용할 생성자
     public GuideContentDto(Long id, String contentBody, int version, Long categoryId) {

@@ -31,6 +31,13 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
     Optional<Guide> findActiveGuide(@Param("categoryId") Long categoryId, @Param("portalId") String portalId);
 
     /**
+     * N+1 문제 해결을 위해 Category를 함께 fetch join하는 메서드
+     */
+    @Transactional(readOnly = true)
+    @Query("SELECT g FROM Guide g JOIN FETCH g.category WHERE g.category.id = :categoryId AND g.portalId = :portalId AND g.deleteYn = false")
+    Optional<Guide> findActiveGuideWithCategory(@Param("categoryId") Long categoryId, @Param("portalId") String portalId);
+
+    /**
      * getCurrentContent()를 위한 DTO 프로젝션 메서드
      */
     @Transactional(readOnly = true)
@@ -59,7 +66,7 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
     @Modifying
     @Transactional
     @Query("UPDATE Guide g SET g.currentVersion.id = :versionId, g.updatedAt = CURRENT_TIMESTAMP WHERE g.id = :guideId")
-    int updateCurrentVersion(@Param("guideId") Long guideId, @Param("versionId") int versionId);
+    int updateCurrentVersion(@Param("guideId") Long guideId, @Param("versionId") Long versionId);
 
     /**
      * JPQL 번역 계층을 완전히 우회하기 위한 네이티브 쿼리 테스트

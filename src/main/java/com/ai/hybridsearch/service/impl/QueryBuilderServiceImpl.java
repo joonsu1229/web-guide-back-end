@@ -21,23 +21,6 @@ public class QueryBuilderServiceImpl implements QueryBuilderService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private ChatLanguageModel chatModel;
 
-    @PostConstruct
-    public void init() {
-        if ("gemini".equalsIgnoreCase(aiModelConfig.getAiModelType())) {
-            log.info("=== QueryBuilderService 초기화 (Gemini) ===");
-            AiModelConfig.GeminiConfig geminiConfig = aiModelConfig.getGemini();
-            if (geminiConfig == null || geminiConfig.getApiKey() == null) {
-                throw new IllegalArgumentException("Gemini API Key가 설정되지 않았습니다.");
-            }
-            this.chatModel = GoogleAiGeminiChatModel.builder()
-                    .apiKey(geminiConfig.getApiKey())
-                    .modelName(geminiConfig.getAiChatModel())
-                    .timeout(Duration.ofSeconds(30))
-                    .temperature(0.2)
-                    .build();
-        }
-    }
-
     @Override
     public TransformedQuery transformQuery(String userQuery) {
         String prompt = createTransformPrompt(userQuery);

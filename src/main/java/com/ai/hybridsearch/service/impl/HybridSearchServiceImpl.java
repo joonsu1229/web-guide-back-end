@@ -122,13 +122,32 @@ public class HybridSearchServiceImpl implements HybridSearchService {
     @Override
     public List<SearchResult> hybridSearch(String query, String category, int limit) {
         QueryBuilderService.TransformedQuery tQuery = queryBuilderService.transformQuery(query);
-        var lexical = lexicalSearch(tQuery.getLexicalQuery(), category, limit * 2);
-        var semantic = vectorSearchService.semanticSearch(tQuery.getSemanticQuery(), category, limit * 2);
-        List<SearchResult> fused = fuseResultsWithRRF(lexical, semantic);
-        return fused.stream()
-               .sorted(Comparator.comparing(SearchResult::getScore).reversed())
-               .limit(limit)
-               .collect(Collectors.toList());
+
+        // 2. 검색 (Retrieval) - 어휘/의미 검색 병렬 실행
+        CompletableFuture<List<SearchResult>> lexicalFuture = CompletableFuture.supplyAsync(
+                () -> lexicalSearch(tQuery.getLexicalQuery(), category, limit * 2)
+        );
+        CompletableFuture<List<SearchResult>> semanticFuture = CompletableFuture.supplyAsync(
+                () -> vectorSearchService.semanticSearch(tQuery.getSemanticQuery(), category, limit * 2)
+        );
+
+        try {
+            // 두 비동기 작업이 모두 완료될 때까지 기다림
+            CompletableFuture.allOf(lexicalFuture, semanticFuture).join();
+
+            // 3. 결과 융합 (Reciprocal Rank Fusion)
+            List<SearchResult> fusedResults = fuseResultsWithRRF(lexicalFuture.get(), semanticFuture.get());
+
+            // 4. 최종 랭킹 및 limit 적용
+            return fusedResults.stream()
+                    .sorted(Comparator.comparing(SearchResult::getScore).reversed())
+                    .limit(3)
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("하이브리드 검색 처리 중 병렬 오류 발생", e);
+        }
     }
 
     // advancedHybridSearch 메서드는 RAG 플로우와 맞지 않아 생략하거나,
