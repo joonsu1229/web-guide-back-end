@@ -3,10 +3,14 @@
   <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
   <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
-  <logger name="org.hibernate.SQL" level="DEBUG"/>
-  <logger name="org.hibernate.orm.jdbc.bind" level="TRACE"/>
-  <logger name="org.hibernate.orm.jdbc.extract" level="TRACE"/>
-  <logger name="org.springframework.jdbc.core" level="TRACE"/>
+  <!-- P6Spy: 파라미터가 포함된 최종 SQL 쿼리만 출력 -->
+  <logger name="com.p6spy" level="INFO"/>
+
+  <!-- Hibernate: 중복 로그 출력을 막기 위해 레벨 조정 -->
+  <logger name="org.hibernate.SQL" level="INFO"/>
+  <logger name="org.hibernate.orm.jdbc.bind" level="INFO"/>
+  <logger name="org.hibernate.orm.jdbc.extract" level="INFO"/>
+  <logger name="org.springframework.jdbc.core" level="DEBUG"/>
 
   <root level="INFO">
     <appender-ref ref="CONSOLE"/>
