@@ -1,176 +1,63 @@
 package com.ai.hybridsearch.service;
 
-import com.ai.hybridsearch.config.AiModelConfig;
 import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel;
-import dev.langchain4j.model.googleai.GoogleAiEmbeddingModel;
-import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
+import java.util.List;
 
-@Service
-@RequiredArgsConstructor
-@Slf4j
-public class EmbeddingService {
+/**
+ * 텍스트를 벡터로 변환하는 임베딩 관련 기능을 정의하는 인터페이스.
+ * 모델 종류(OpenAI, Gemini 등)에 상관없이 일관된 기능을 제공해야 함.
+ */
+public interface EmbeddingService {
 
-    private final AiModelConfig config;
-    private EmbeddingModel embeddingModel; //문서임베딩
-    private EmbeddingModel queryEmbeddingModel;    // 질문(쿼리) 임베딩용
+    /**
+     * 여러 개의 텍스트를 한 번의 호출로 임베딩. (문서 임베딩용)
+     * 배치 처리를 통해 성능을 최적화.
+     *
+     * @param texts 임베딩할 텍스트 목록
+     * @return 생성된 임베딩 객체 목록
+     */
+    List<Embedding> embedAll(List<String> texts);
 
-    @PostConstruct
-    public void init() {
-        try {
-            log.info("=== EmbeddingService 초기화 시작 ===");
-            log.info("Model Type: {}, Target Dimensions: {}", config.getModelType(), config.getTargetDimensions());
+    /**
+     * 단일 텍스트를 임베딩하여 Embedding 객체로 반환. (주로 문서용)
+     *
+     * @param text 임베딩할 텍스트
+     * @return 생성된 임베딩 객체
+     */
+    Embedding generateEmbedding(String text);
 
-            switch (config.getModelType().toLowerCase()) {
-                case "onnx" -> initOnnxModel();
-                case "openai" -> {
-                    validateOpenAiConfig();
-                    initOpenAiModel();
-                }
-                case "gemini" -> {
-                    validateGeminiConfig();
-                    initGeminiModel();
-                }
-                default -> throw new IllegalArgumentException("지원하지 않는 모델 타입: " + config.getModelType());
-            }
+    /**
+     * 단일 텍스트를 임베딩하여 float 배열 벡터로 반환. (주로 문서용)
+     *
+     * @param text 임베딩할 텍스트
+     * @return 생성된 float 배열 벡터
+     */
+    float[] embed(String text);
 
-            log.info("=== EmbeddingService 초기화 완료 ===");
-        } catch (Exception e) {
-            log.error("=== EmbeddingService 초기화 실패 ===", e);
-            throw e;
-        }
-    }
+    /**
+     * 단일 '질문(Query)'을 임베딩하여 float 배열 벡터로 반환.
+     * Gemini 같이 질문/문서 모델이 분리된 경우를 대비.
+     *
+     * @param query 임베딩할 질문 텍스트
+     * @return 생성된 float 배열 벡터
+     */
+    float[] embedQuery(String query);
 
-    private void initOnnxModel() {
-        log.info("ONNX 모델 생성 시작...");
-        try {
-            embeddingModel = new AllMiniLmL6V2EmbeddingModel();
-            log.info("ONNX 모델 생성 완료");
-        } catch (Exception e) {
-            logDetailedException("ONNX 모델 생성", e);
-            throw e;
-        }
-    }
+    /**
+     * 단일 '질문(Query)'을 임베딩하여 Embedding 객체로 반환.
+     * Reranker 등에서 코사인 유사도 계산 시 활용.
+     *
+     * @param query 임베딩할 질문 텍스트
+     * @return 생성된 임베딩 객체
+     */
+    Embedding embedQueryToEmbedding(String query);
 
-    private void initOpenAiModel() {
-        log.info("OpenAI 모델 생성 시작...");
-        var builder = OpenAiEmbeddingModel.builder()
-                .apiKey(config.getOpenai().getApiKey())
-                .dimensions(config.getTargetDimensions());
-
-        if (config.getOpenai().getEmbeddingModel() != null) {
-            builder.modelName(config.getOpenai().getEmbeddingModel());
-        }
-
-        embeddingModel = builder.build();
-        log.info("OpenAI 모델 생성 완료 - Model: {}", config.getOpenai().getEmbeddingModel() != null ? config.getOpenai().getEmbeddingModel() : "default");
-    }
-
-    private void initGeminiModel() {
-        log.info("Gemini 모델 생성 시작 (문서/질문용 동시 생성)...");
-        var geminiConfig = config.getGemini();
-
-        // 1. 문서 임베딩용 모델 생성
-        embeddingModel = GoogleAiEmbeddingModel.builder()
-                .apiKey(geminiConfig.getApiKey())
-                .modelName(geminiConfig.getEmbeddingModel())
-                .taskType(GoogleAiEmbeddingModel.TaskType.RETRIEVAL_DOCUMENT)
-                .build();
-
-        // 2. 질문 임베딩용 모델 생성
-        queryEmbeddingModel = GoogleAiEmbeddingModel.builder()
-                .apiKey(geminiConfig.getApiKey())
-                .modelName(geminiConfig.getEmbeddingModel())
-                .taskType(GoogleAiEmbeddingModel.TaskType.RETRIEVAL_QUERY)
-                .build();
-
-        log.info("Gemini 문서/질문 임베딩 모델 생성 완료");
-    }
-
-    private void validateOpenAiConfig() {
-        if (config.getOpenai() == null || config.getOpenai().getApiKey() == null || config.getOpenai().getApiKey().isBlank()) {
-            throw new IllegalArgumentException("OpenAI API Key가 설정되지 않았습니다.");
-        }
-        log.info("OpenAI API Key 존재함");
-    }
-
-    private void validateGeminiConfig() {
-        if (config.getGemini() == null || config.getGemini().getApiKey() == null || config.getGemini().getApiKey().isBlank()) {
-            throw new IllegalArgumentException("Gemini API Key가 설정되지 않았습니다.");
-        }
-        log.info("Gemini API Key 존재함");
-    }
-
-    private void logDetailedException(String operation, Exception e) {
-        log.error("{} 중 예외 발생", operation);
-        log.error("예외 타입: {}", e.getClass().getName());
-        log.error("예외 메시지: {}", e.getMessage());
-
-        Throwable cause = e.getCause();
-        while (cause != null) {
-            log.error("원인: {} - {}", cause.getClass().getName(), cause.getMessage());
-            cause = cause.getCause();
-        }
-
-        log.error("전체 스택 트레이스:", e);
-    }
-
-    public Embedding generateEmbedding(String text) {
-        if (text == null || text.trim().isEmpty()) {
-            throw new IllegalArgumentException("임베딩할 텍스트가 비어있습니다.");
-        }
-        try {
-            return embeddingModel.embed(text).content();
-        } catch (Exception e) {
-            log.error("임베딩 생성 실패 - Text: {}", text, e);
-            throw new RuntimeException("임베딩 생성에 실패했습니다.", e);
-        }
-    }
-
-    public float[] embed(String text) {
-        return generateEmbedding(text).vector();
-    }
-
-    @Cacheable("query-embeddings")
-    public float[] embedQuery(String text) {
-        if (text == null || text.trim().isEmpty()) {
-            throw new IllegalArgumentException("임베딩할 질문 텍스트가 비어있습니다.");
-        }
-        try {
-            return queryEmbeddingModel.embed(text).content().vector();
-        } catch (Exception e) {
-            log.error("질문 임베딩 생성 실패 - Text: {}", text, e);
-            throw new RuntimeException("질문 임베딩 생성에 실패했습니다.", e);
-        }
-    }
-
-    public double cosineSimilarity(Embedding embedding1, Embedding embedding2) {
-        float[] vector1 = embedding1.vector();
-        float[] vector2 = embedding2.vector();
-
-        if (vector1.length != vector2.length) {
-            throw new IllegalArgumentException("임베딩 벡터의 차원이 다릅니다.");
-        }
-
-        double dotProduct = 0.0, normA = 0.0, normB = 0.0;
-
-        for (int i = 0; i < vector1.length; i++) {
-            dotProduct += vector1[i] * vector2[i];
-            normA += vector1[i] * vector1[i];
-            normB += vector2[i] * vector2[i];
-        }
-
-        double denominator = Math.sqrt(normA) * Math.sqrt(normB);
-        if (denominator == 0.0) {
-            log.warn("코사인 유사도 계산 중 영벡터 발견");
-            return 0.0;
-        }
-        return dotProduct / denominator;
-    }
+    /**
+     * 두 임베딩 벡터 간의 코사인 유사도를 계산.
+     *
+     * @param embedding1 첫 번째 임베딩
+     * @param embedding2 두 번째 임베딩
+     * @return 0과 1 사이의 코사인 유사도 값
+     */
+    double cosineSimilarity(Embedding embedding1, Embedding embedding2);
 }

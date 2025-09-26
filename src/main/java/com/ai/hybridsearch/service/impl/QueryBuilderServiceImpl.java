@@ -1,25 +1,22 @@
 package com.ai.hybridsearch.service.impl;
 
-import com.ai.hybridsearch.config.AiModelConfig;
 import com.ai.hybridsearch.service.QueryBuilderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class QueryBuilderServiceImpl implements QueryBuilderService {
 
-    private final AiModelConfig aiModelConfig;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private ChatLanguageModel chatModel;
+    private final ChatLanguageModel chatModel;
+
+    public QueryBuilderServiceImpl(@Qualifier("queryChatModel") ChatLanguageModel chatModel) {
+        this.chatModel = chatModel;
+    }
 
     @Override
     public TransformedQuery transformQuery(String userQuery) {

@@ -33,7 +33,7 @@ public class SearchController {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 
-        // 하이브리드 검색 - 의미적 유사도까지 고려한 고품질 결과
+        // 최적화된 하이브리드 검색 (검색 -> 융합 -> 재순위화)
         List<SearchResult> results = hybridSearchService.hybridSearch(query, category, limit);
 
         stopWatch.stop();

@@ -1,14 +1,10 @@
 package com.ai.hybridsearch.service.impl;
-
-import com.ai.hybridsearch.config.AiModelConfig;
 import com.ai.hybridsearch.dto.SearchResult;
-import com.ai.hybridsearch.entity.Document;
 import com.ai.hybridsearch.service.RAGService;
 import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -19,23 +15,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class RAGServiceImpl implements RAGService {
-
-    private final AiModelConfig aiModelConfig;
     private ChatLanguageModel chatModel;
 
-    @PostConstruct
-    public void init() {
-        if ("gemini".equalsIgnoreCase(aiModelConfig.getAiModelType())) {
-            log.info("=== RAGService 초기화 (Gemini) ===");
-            AiModelConfig.GeminiConfig geminiConfig = aiModelConfig.getGemini();
-            this.chatModel = GoogleAiGeminiChatModel.builder()
-                    .apiKey(geminiConfig.getApiKey())
-                    .modelName(geminiConfig.getAiChatModel())
-                    .maxOutputTokens(aiModelConfig.getGemini().getOutputMaxToken())
-                    .timeout(Duration.ofSeconds(60))
-                    .temperature(0.3)
-                    .build();
-        }
+    public RAGServiceImpl(@Qualifier("queryChatModel") ChatLanguageModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @Override
@@ -43,15 +26,15 @@ public class RAGServiceImpl implements RAGService {
         String prompt = createGenerationPrompt(originalQuery, contextDocs);
         String answer = "답변을 생성하지 못했습니다.";
         try {
-            log.info("Gemini 답변 생성 시작. 컨텍스트 문서 {}개", contextDocs.size());
+            log.info("Chat Model 답변 생성 시작. 컨텍스트 문서 {}개", contextDocs.size());
             answer = chatModel.generate(prompt);
         } catch (Exception e) {
-            log.error("Gemini 답변 생성 중 오류 발생", e);
+            log.error("Chat Model 답변 생성 중 오류 발생", e);
         }
 
         GeneratedResponse response = new GeneratedResponse();
         response.setAnswer(answer);
-        response.setSources(contextDocs.stream().map(SearchResult::getDocument).collect(Collectors.toList()));
+        response.setSources(contextDocs);
         return response;
     }
 

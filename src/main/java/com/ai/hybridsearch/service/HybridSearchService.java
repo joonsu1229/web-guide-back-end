@@ -18,4 +18,6 @@ public interface HybridSearchService {
      */
     List<SearchResult> advancedHybridSearch(String query, String category,
                                             boolean useFuzzy, boolean usePhrase, int limit);
+
+    RAGService.GeneratedResponse searchAndGenerate(String query, String category, int limit);
 }

@@ -64,9 +64,9 @@ public class AiCrawlingConfig {
         /**
          * 사이트별 다른 모델 사용 설정 (향후 확장)
          */
-        private String saraminModel = "gemini-1.5-flash";
-        private String jobkoreaModel = "gemini-1.5-flash";
-        private String wantedModel = "gemini-1.5-flash";
+        private String saraminModel = "gemini-2.0-flash-001-lite";
+        private String jobkoreaModel = "gemini-2.0-flash-001-lite";
+        private String wantedModel = "gemini-2.0-flash-001-lite";
 
         /**
          * 사이트별 프롬프트 온도 설정

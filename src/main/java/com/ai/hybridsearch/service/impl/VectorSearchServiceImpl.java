@@ -37,24 +37,14 @@ public class VectorSearchServiceImpl implements VectorSearchService {
         float[] embedding = embeddingService.embedQuery(query);
         String vectorStr = toVectorString(embedding);
 
-        List<Object[]> results;
-        if (StringUtils.hasText(category)) {
-            results = vectorSearchRepository.searchByEmbeddingAndCategory(vectorStr, category, limit);
-        } else {
-            results = vectorSearchRepository.searchByEmbedding(vectorStr, limit);
-        }
+        List<Object[]> results = vectorSearchRepository.searchByEmbedding(vectorStr, limit);
 
         return mapToSearchResults(results, "semantic");
     }
 
     @Override
     public List<Document> findByFullTextSearch(String searchQuery, String category, int limit) {
-        List<Object[]> results;
-        if (StringUtils.hasText(category)) {
-            results = vectorSearchRepository.findByFullTextSearchAndCategory(searchQuery, category, limit);
-        } else {
-            results = vectorSearchRepository.findByFullTextSearch(searchQuery, limit);
-        }
+        List<Object[]> results = vectorSearchRepository.findByFullTextSearch(searchQuery, limit);
         return mapToDocumentsWithScore(results);
     }
 

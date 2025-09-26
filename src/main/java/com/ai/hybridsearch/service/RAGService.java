@@ -10,7 +10,7 @@ public interface RAGService {
     @Data
     class GeneratedResponse {
         private String answer;
-        private List<Document> sources;
+        private List<SearchResult> sources;
     }
 
     /**
