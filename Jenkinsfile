@@ -4,6 +4,7 @@ pipeline {
     environment {
         REPO_URL = 'https://github.com/joonsu1229/web-guide-back-end.git'
         BRANCH = 'master'
+        GIT_CREDENTIALS_ID = 'personalToken'
         DEPLOY_USER = 'ubuntu'
         DEPLOY_HOST = '217.142.144.114'
         DEPLOY_PATH = '/home/ubuntu/app'
@@ -20,7 +21,10 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                git branch: "${BRANCH}", url: "${REPO_URL}"
+                echo "📦 Private repository에서 소스 코드 클론 중..."
+                git branch: "${BRANCH}",
+                    url: "${REPO_URL}",
+                    credentialsId: "${GIT_CREDENTIALS_ID}"
             }
         }
 
