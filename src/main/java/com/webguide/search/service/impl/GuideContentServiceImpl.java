@@ -71,7 +71,7 @@ public class GuideContentServiceImpl implements GuideContentService {
 
         GuideVersion savedVersion = guideVersionRepository.save(newVersion);
 
-        guideRepository.updateCurrentVersion(guide.getId(), savedVersion.getId());
+        guideRepository.updateCurrentVersion(guide.getId(), Long.valueOf(savedVersion.getVersion()));
 
         return new GuideContentDto(
             savedVersion.getId(),
