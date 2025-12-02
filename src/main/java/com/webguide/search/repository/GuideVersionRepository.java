@@ -44,6 +44,7 @@ public interface GuideVersionRepository extends JpaRepository<GuideVersion, Long
     @Query(value = """
         SELECT gv.id AS id,
                gv.guide_id AS guideId,
+               g.category_id AS categoryId,
                gv.version AS version,
                gv.content_body AS contentBody,
                to_char(gv.created_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS createdAt

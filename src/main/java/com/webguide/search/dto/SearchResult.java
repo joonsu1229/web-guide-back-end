@@ -11,10 +11,11 @@ public class SearchResult {
      * Hibernate가 Native Query 결과를 DTO로 직접 매핑하기 위한 생성자.
      * SELECT 순서와 정확히 일치해야 함.
      */
-    public SearchResult(Long id, Long guideId, Integer version, String contentBody, String createdAt) {
+    public SearchResult(Long id, Long guideId, Long categoryId, Integer version, String contentBody, String createdAt) {
         this.document = new Document();
         this.document.setId(id);
         this.document.setGuideId(guideId);
+        this.document.setCategoryId(categoryId);
         this.document.setVersion(version);
         this.document.setContentBody(contentBody);
 
