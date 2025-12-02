@@ -24,6 +24,9 @@ public class Document {
     @Column(name = "version")
     private int version;
 
+    @Column(name = "category_id")
+    private Long categoryId;
+
     // content_body 필드명 유지
     @Column(name = "content_body", columnDefinition = "text")
     private String contentBody;
