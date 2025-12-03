@@ -11,14 +11,9 @@ import com.webguide.search.repository.GuideVersionRepository;
 import com.webguide.search.service.GuideContentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.openkoreantext.processor.OpenKoreanTextProcessorJava;
-import org.openkoreantext.processor.tokenizer.KoreanTokenizer;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import scala.collection.JavaConverters;
-import scala.collection.Seq;
 
 import java.util.Arrays;
 import java.util.List;

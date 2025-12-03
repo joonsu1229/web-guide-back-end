@@ -9,11 +9,11 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
-	<groupId>com.ai</groupId>
-	<artifactId>project</artifactId>
+	<groupId>com.webguide</groupId>
+	<artifactId>web-guide-back-end</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>project</name>
-	<description>ai project for Spring Boot</description>
+	<name>web-guide-back-end</name>
+	<description>Web Guide Backend Service with PGRoonga Search</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -62,49 +62,6 @@
 		  <version>3.9.1</version>
 		</dependency>
 
-        <!-- LangChain4J -->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j</artifactId>
-            <version>${langchain4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-embeddings-all-minilm-l6-v2</artifactId>
-			<version>${langchain4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openkoreantext</groupId>
-            <artifactId>open-korean-text</artifactId>
-            <version>2.3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-open-ai</artifactId>
-            <version>${langchain4j.version}</version>
-        </dependency>
-
-		<!-- Gemini 지원을 위한 의존성 -->
-		<dependency>
-			<groupId>dev.langchain4j</groupId>
-			<artifactId>langchain4j-google-ai-gemini</artifactId>
-			<version>${langchain4j.version}</version>
-		</dependency>
-
-		<!-- LangChain4j Anthropic (Claude) -->
-		<dependency>
-			<groupId>dev.langchain4j</groupId>
-			<artifactId>langchain4j-anthropic</artifactId>
-			<version>${langchain4j.version}</version>
-		</dependency>
-
-        <!-- Vector Database -->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-pgvector</artifactId>
-            <version>${langchain4j.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
@@ -117,7 +74,7 @@
             <version>${jsoup.version}</version>
         </dependency>
 
-		        <!-- HTTP Client for API calls -->
+        <!-- HTTP Client for API calls -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
@@ -128,12 +85,6 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
-		<dependency>
-			<groupId>com.microsoft.onnxruntime</groupId>
-			<artifactId>onnxruntime</artifactId>
-			<version>1.16.3</version>
-		</dependency>
 
         <!-- JSON Processing -->
         <dependency>

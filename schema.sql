@@ -1,59 +1,61 @@
--- PostgreSQL 스키마 설정
--- src/main/resources/schema.sql
+-- PostgreSQL Schema Configuration for WebGuide Backend with PGRoonga
+-- This file defines the necessary tables and PGRoonga indexes for the search functionality.
 
--- PostgreSQL extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS pgroonga;
 
--- Documents 테이블
-CREATE TABLE IF NOT EXISTS documents (
-    id BIGSERIAL PRIMARY KEY,
-    title VARCHAR(500) NOT NULL,
-    content TEXT,
-    category VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    search_vector TSVECTOR
-);
+-- Table: webguide.notice
+-- This table is assumed to exist based on the application's repository queries.
+-- We are adding PGRoonga indexes to its columns for full-text search.
+-- The table structure is inferred from NoticeSearchRepository.java
 
--- Full-text search를 위한 인덱스
-CREATE INDEX IF NOT EXISTS idx_documents_search_vector 
-ON documents USING GIN(search_vector);
+-- Example table creation if it doesn't exist (commented out, as assumed to exist)
+-- CREATE TABLE IF NOT EXISTS webguide.notice (
+--     notice_id BIGSERIAL PRIMARY KEY,
+--     category VARCHAR(255),
+--     title VARCHAR(500) NOT NULL,
+--     summary TEXT,
+--     content TEXT,
+--     views INT DEFAULT 0,
+--     use_yn CHAR(1) DEFAULT 'Y',
+--     is_new BOOLEAN DEFAULT FALSE,
+--     reg_dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     mod_dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     delete_yn CHAR(1) DEFAULT 'N',
+--     portal_id VARCHAR(255)
+-- );
 
--- 카테고리 인덱스
-CREATE INDEX IF NOT EXISTS idx_documents_category 
-ON documents(category);
+-- PGRoonga index for webguide.notice table for title, summary, content
+CREATE INDEX IF NOT EXISTS pgroonga_notice_search_index ON webguide.notice USING pgroonga (title, summary, content);
 
--- 제목 인덱스
-CREATE INDEX IF NOT EXISTS idx_documents_title 
-ON documents(title);
+-- Table: webguide.guides
+-- This table is assumed to exist based on the application's repository queries.
+-- We are adding PGRoonga indexes to its columns for full-text search.
+-- The table structure is inferred from GuideVersionRepository.java
 
--- tsvector 자동 업데이트를 위한 트리거
-CREATE OR REPLACE FUNCTION update_search_vector()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.search_vector := to_tsvector('english', 
-        COALESCE(NEW.title, '') || ' ' || COALESCE(NEW.content, ''));
-    NEW.updated_at := CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- Example table creation if it doesn't exist (commented out, as assumed to exist)
+-- CREATE TABLE IF NOT EXISTS webguide.guides (
+--     id BIGSERIAL PRIMARY KEY,
+--     category_id BIGINT,
+--     portal_id VARCHAR(255),
+--     delete_yn BOOLEAN DEFAULT FALSE,
+--     current_version_id INT
+-- );
 
-DROP TRIGGER IF EXISTS trigger_update_search_vector ON documents;
-CREATE TRIGGER trigger_update_search_vector
-    BEFORE INSERT OR UPDATE ON documents
-    FOR EACH ROW
-    EXECUTE FUNCTION update_search_vector();
+-- Table: webguide.guide_versions
+-- This table is assumed to exist based on the application's repository queries.
+-- We are adding PGRoonga indexes to its columns for full-text search.
+-- The table structure is inferred from GuideVersionRepository.java
 
--- 샘플 데이터 삽입
-INSERT INTO documents (title, content, category) VALUES
-('Spring Boot Guide', 'Spring Boot is a framework that makes it easy to create stand-alone, production-grade Spring based Applications. It provides auto-configuration, embedded servers, and production-ready features.', 'technology'),
-('Java 21 Features', 'Java 21 introduces virtual threads, pattern matching, and record patterns. These features improve performance and developer productivity.', 'technology'),
-('PostgreSQL Performance', 'PostgreSQL offers excellent performance for both OLTP and OLAP workloads. Full-text search and vector operations are well supported.', 'database'),
-('Machine Learning Basics', 'Machine learning is a subset of artificial intelligence that focuses on algorithms that can learn from data without being explicitly programmed.', 'ai'),
-('Hybrid Search Implementation', 'Hybrid search combines keyword-based search with semantic search using embeddings. This approach provides better search relevance.', 'technology'),
-('Vector Databases', 'Vector databases are optimized for storing and querying high-dimensional vectors, commonly used in AI and ML applications.', 'database'),
-('LangChain Tutorial', 'LangChain is a framework for developing applications powered by language models. It provides tools for chaining LLM calls.', 'ai'),
-('REST API Design', 'RESTful APIs should follow standard HTTP methods and status codes. Proper resource naming and versioning are important.', 'technology'),
-('Database Indexing', 'Database indexes improve query performance but can slow down write operations. Choose indexes carefully based on query patterns.', 'database'),
-('Natural Language Processing', 'NLP involves computational techniques for analyzing and generating human language. Modern approaches use transformer models.', 'ai');
+-- Example table creation if it doesn't exist (commented out, as assumed to exist)
+-- CREATE TABLE IF NOT EXISTS webguide.guide_versions (
+--     id BIGSERIAL PRIMARY KEY,
+--     guide_id BIGINT NOT NULL,
+--     version INT NOT NULL,
+--     content_body TEXT,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     FOREIGN KEY (guide_id) REFERENCES webguide.guides(id)
+-- );
+
+-- PGRoonga index for webguide.guide_versions table for content_body
+CREATE INDEX IF NOT EXISTS pgroonga_guide_versions_content_search_index ON webguide.guide_versions USING pgroonga (content_body);

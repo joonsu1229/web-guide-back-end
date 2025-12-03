@@ -19,9 +19,6 @@ spring:
   # Cache Configuration
   cache:
     type: simple
-    cache-names:
-      - query-embeddings
-      - query-embeddings-obj
     caffeine:
       spec: maximumSize=1000,expireAfterWrite=1h
 
