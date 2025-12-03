@@ -35,7 +35,6 @@ pipeline {
                 sh './mvnw clean package -DskipTests'
                 sh '''
                 echo "📁 Maven 리포지토리에서 모델 JAR 확인:"
-                find ~/.m2/repository -name "*all-minilm-l6-v2*" -type f || echo "모델 JAR 파일을 찾을 수 없음"
                 '''
             }
         }

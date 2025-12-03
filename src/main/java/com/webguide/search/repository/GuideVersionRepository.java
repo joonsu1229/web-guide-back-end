@@ -54,7 +54,7 @@ public interface GuideVersionRepository extends JpaRepository<GuideVersion, Long
            AND g.id = gv.guide_id
          WHERE g.portal_id = :portalId
            AND g.delete_yn = false
-           AND (:categoryId IS NULL OR g.category_id = :categoryId)
+           AND g.category_id IS NOT null
            AND gv.content_body &@* :keyword
          ORDER BY pgroonga_score(gv.tableoid, gv.ctid) DESC, gv.created_at DESC
          LIMIT :limit
