@@ -43,7 +43,7 @@ public class PortalMenu {
     @Column(name = "portal_id", nullable = false, length = 50)
     private String portalId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT true")
     private Boolean active = true;
 
     @Column(name = "created_at")
