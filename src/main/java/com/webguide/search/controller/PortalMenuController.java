@@ -20,4 +20,24 @@ public class PortalMenuController {
     public ResponseEntity<List<PortalMenuDto>> getPortalMenus(@RequestParam String portalId) {
         return ResponseEntity.ok(portalMenuService.getPortalMenus(portalId));
     }
+
+    @PostMapping
+    public ResponseEntity<PortalMenuDto> createPortalMenu(@RequestBody PortalMenuDto menuDto) {
+        return ResponseEntity.ok(portalMenuService.createPortalMenu(menuDto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<PortalMenuDto> updatePortalMenu(
+            @PathVariable Long id,
+            @RequestBody PortalMenuDto menuDto) {
+        return ResponseEntity.ok(portalMenuService.updatePortalMenu(id, menuDto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePortalMenu(
+            @PathVariable Long id,
+            @RequestParam String portalId) {
+        portalMenuService.deactivatePortalMenu(id, portalId);
+        return ResponseEntity.noContent().build();
+    }
 }

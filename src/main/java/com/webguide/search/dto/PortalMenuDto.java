@@ -20,6 +20,8 @@ public class PortalMenuDto {
     private String className;
     private List<String> tags;
     private String section;
+    private String portalId;
+    private Boolean active;
 
     public static PortalMenuDto fromEntity(PortalMenu entity) {
         List<String> tagList = entity.getTags() != null && !entity.getTags().isEmpty()
@@ -34,6 +36,8 @@ public class PortalMenuDto {
                 .className(entity.getClassName())
                 .tags(tagList)
                 .section(entity.getSection())
+                .portalId(entity.getPortalId())
+                .active(entity.getActive())
                 .build();
     }
 }

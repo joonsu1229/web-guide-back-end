@@ -43,6 +43,9 @@ public class PortalMenu {
     @Column(name = "portal_id", nullable = false, length = 50)
     private String portalId;
 
+    @Column(nullable = false)
+    private Boolean active = true;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

@@ -36,4 +36,50 @@ public class PortalMenuServiceImpl implements PortalMenuService {
                 .orElseThrow(() -> new EntityNotFoundException("메뉴를 찾을 수 없습니다: " + menuId));
         return PortalMenuDto.fromEntity(portalMenu);
     }
+
+    @Override
+    @Transactional
+    public PortalMenuDto createPortalMenu(PortalMenuDto menuDto) {
+        PortalMenu menu = new PortalMenu();
+        updateMenuFields(menu, menuDto);
+        menu.setPortalId(menuDto.getPortalId());
+        menu.setActive(true);
+        
+        return PortalMenuDto.fromEntity(portalMenuRepository.save(menu));
+    }
+
+    @Override
+    @Transactional
+    public PortalMenuDto updatePortalMenu(Long menuId, PortalMenuDto menuDto) {
+        PortalMenu menu = portalMenuRepository.findById(menuId)
+                .orElseThrow(() -> new EntityNotFoundException("수정할 메뉴를 찾을 수 없습니다: " + menuId));
+        
+        updateMenuFields(menu, menuDto);
+        
+        return PortalMenuDto.fromEntity(portalMenuRepository.save(menu));
+    }
+
+    @Override
+    @Transactional
+    public void deactivatePortalMenu(Long menuId, String portalId) {
+        PortalMenu menu = portalMenuRepository.findByIdAndPortalId(menuId, portalId)
+                .orElseThrow(() -> new EntityNotFoundException("비활성화할 메뉴를 찾을 수 없습니다: " + menuId));
+        
+        menu.setActive(false);
+        portalMenuRepository.save(menu);
+    }
+
+    private void updateMenuFields(PortalMenu menu, PortalMenuDto dto) {
+        menu.setTitle(dto.getTitle());
+        menu.setDescription(dto.getDescription());
+        menu.setIcon(dto.getIcon());
+        menu.setClassName(dto.getClassName());
+        menu.setSection(dto.getSection());
+        
+        if (dto.getTags() != null && !dto.getTags().isEmpty()) {
+            menu.setTags(String.join(",", dto.getTags()));
+        } else {
+            menu.setTags(null);
+        }
+    }
 }
