@@ -66,7 +66,6 @@ pipeline {
                     # BUILD_ID=dontKillMe를 사용하여 Jenkins가 이 프로세스를 종료하지 못하도록 합니다.
                     # 백그라운드 실행 시 생성된 PID를 PID_FILE에 저장합니다.
                     BUILD_ID=dontKillMe nohup java -Dspring.profiles.active=prd \
-                               -DMODEL_TYPE="${MODEL_TYPE}" \
                                -DDB_URL="${DB_URL}" \
                                -DDB_USERNAME="${DB_USERNAME}" \
                                -DDB_PASSWORD="${DB_PASSWORD}" \
